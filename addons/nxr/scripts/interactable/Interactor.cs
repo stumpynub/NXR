@@ -12,14 +12,27 @@ public partial class Interactor : Area3D
 {
 
 	#region Exported: 
+	/// <summary>
+	///  Controller used for input and updating interactor transform 
+	/// </summary>
 	[Export] public Controller Controller { get; private set; }
-	[Export] public float Smoothing { get; set; } = 20;
-	[Export] public bool UpdateTransform { get; set ; } = true;
 
+	/// <summary>
+	/// Amount of smoothing used when FollowControllerTransform = true 
+	/// </summary>
+	[Export] public float Smoothing { get; set; } = 20;
+
+	/// <summary>
+	/// Updates this interactors transform to match the Controller transform 
+	/// </summary>
+	[Export] public bool FollowControllerTransform { get; set ; } = true;
 	#endregion
 
 
 	#region Public: 
+	/// <summary>
+	/// the current interactable grabbed by this interactor 
+	/// </summary>
 	public Interactable GrabbedInteractable { get; set; }
 	#endregion
 
@@ -41,7 +54,7 @@ public partial class Interactor : Area3D
 	public override void _PhysicsProcess(double delta)
 	{
 
-		if (UpdateTransform)
+		if (FollowControllerTransform && Controller != null)
 		{
 			GlobalTransform = GlobalTransform.InterpolateWith(Controller.GlobalTransform, Smoothing * (float)delta);
 		}
@@ -63,9 +76,14 @@ public partial class Interactor : Area3D
 		}
 	}
 
+
+	/// <summary>
+	/// Connected to Controller.ButtonPressed Signal; Checks for input
+	/// and hovered interactables - Attempt to grab if found 
+	/// </summary>
+	/// <param name="buttonName">b</param>
 	private void Interact(String buttonName)
 	{
-
 		if (IsInstanceValid(GrabbedInteractable)) { return; }
 
 		foreach (Interactable hovered in HoveredInteractables())
@@ -93,6 +111,10 @@ public partial class Interactor : Area3D
 		}
 	}
 
+	/// <summary>
+	/// Alternate grab mode for grabbing interactables from afar
+	/// </summary>
+	/// <param name="delta"></param>
 	private void DistanceGrab(double delta)
 	{
 		if (_distanceGrabbing && IsInstanceValid(_distanceInteractable))
@@ -115,6 +137,11 @@ public partial class Interactor : Area3D
 		}
 	}
 
+
+	/// <summary>
+	/// Alternate drop mode for breaking 
+	/// grabs after a certain distance 
+	/// </summary>
 	private void DistanceDrop()
 	{
 		if (!IsInstanceValid(GrabbedInteractable)) return;
@@ -136,6 +163,12 @@ public partial class Interactor : Area3D
 		}
 	}
 
+
+	/// <summary>
+	///  Connected to Controller.ButtonReleased; Checks for input 
+	///  and grabbed interactable - Drop if found 
+	/// </summary>
+	/// <param name="buttonName">xr controller button</param>
 	private void InteractDrop(String buttonName)
 	{
 		if (!IsInstanceValid(GrabbedInteractable)) return;
@@ -146,6 +179,10 @@ public partial class Interactor : Area3D
 		}
 	}
 
+	/// <summary>
+	/// Sorts all hovered interactable based on (distance / interactable.priority) 
+	/// </summary>
+	/// <returns>interactable</returns>
 	private List<Interactable> HoveredInteractables()
 	{
 		Array<Node3D> bodies = GetOverlappingBodies();
@@ -179,6 +216,11 @@ public partial class Interactor : Area3D
 		return interactables;
 	}
 
+
+	/// <summary>
+	/// Sets this interactors 'GrabbedInteractable' and calls the Grab method on given interactable
+	/// </summary>
+	/// <param name="interactable">interactable used for grab</param>
 	public void Grab(Interactable interactable)
 	{
 		GrabbedInteractable = interactable;
@@ -186,6 +228,9 @@ public partial class Interactor : Area3D
 		_distanceGrabbing = false;
 	}
 
+	/// <summary>
+	/// Calls the 'Drop' method on GrabbedInteractable; Sets GrabbedInteractable to 'null'
+	/// </summary>
 	public void Drop()
 	{
 		GrabbedInteractable.Drop(this);
